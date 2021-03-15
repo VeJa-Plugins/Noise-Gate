@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 
+#include "gate_core.h"
+
 /**********************************************************************************************************************************************************/
 
 #define PLUGIN_URI "http://VeJaPlugins.com/plugins/Release/NoiseGate"
@@ -34,6 +36,10 @@ typedef struct{
     float*             hold;
     float*            decay;
 
+    uint32_t     sampleRate;
+
+    gate_t noisegate;
+
 } NoiseGate;
 
 /**********************************************************************************************************************************************************/
@@ -48,6 +54,8 @@ const char*                         bundle_path,
 const LV2_Feature* const* features)
 {
     NoiseGate* self = (NoiseGate*)malloc(sizeof(NoiseGate));
+
+    self->sampleRate = (uint32_t)samplerate;
 
     return (LV2_Handle)self;
 }
@@ -92,10 +100,13 @@ void run(LV2_Handle instance, uint32_t n_samples)
 {
     NoiseGate* self = (NoiseGate*)instance;    
 
-    uint32_t i;
-    for (i = 0; i < n_samples; ++i)
+    //update parameters
+    //lower threshold is 20dB lower
+    Gate_UpdateParameters(&self->noisegate, self->sampleRate, *self->attack, *self->hold, *self->decay, 1, *self->threshold, *self->threshold - 20.0f);
+
+    for (uint32_t i = 0; i < n_samples; ++i)
     {
-        self->input[i] = self->output[i];
+        self->output[i] = Gate_ApplyGate(&self->noisegate, self->input[i], self->key[i]);
     }
 }
 
