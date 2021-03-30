@@ -36,6 +36,10 @@ typedef struct{
     float*             hold;
     float*            decay;
 
+    float prev_attack;
+    float prev_hold;
+    float prev_decay;
+
     uint32_t     sampleRate;
 
     gate_t noisegate;
@@ -56,6 +60,8 @@ const LV2_Feature* const* features)
     NoiseGate* self = (NoiseGate*)malloc(sizeof(NoiseGate));
 
     self->sampleRate = (uint32_t)samplerate;
+
+    Gate_Init(&self->noisegate);
 
     return (LV2_Handle)self;
 }
@@ -100,10 +106,16 @@ void run(LV2_Handle instance, uint32_t n_samples)
 {
     NoiseGate* self = (NoiseGate*)instance;    
 
-    //update parameters
-    //lower threshold is 20dB lower
-    Gate_UpdateParameters(&self->noisegate, self->sampleRate, *self->attack, *self->hold, *self->decay, 1, *self->threshold, *self->threshold - 20.0f);
+    if ( (self->prev_attack != *self->attack) || (self->prev_hold != *self->hold) || (self->prev_decay != *self->decay) )
+    {
+        //update parameters
+        //lower threshold is 20dB lower
+        Gate_UpdateParameters(&self->noisegate, self->sampleRate, *self->attack, *self->hold, *self->decay, 1, *self->threshold, *self->threshold - 20.0f);
 
+        self->prev_attack = *self->attack;
+        self->prev_decay = *self->decay;
+        self->prev_hold = *self->hold;
+    }
     for (uint32_t i = 0; i < n_samples; ++i)
     {
         self->output[i] = Gate_ApplyGate(&self->noisegate, self->input[i], self->key[i]);
