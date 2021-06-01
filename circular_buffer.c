@@ -20,23 +20,27 @@
 
 #include "circular_buffer.h"
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-void ringbuffer_clear(ringbuffer_t *buffer, int size) 
+void ringbuffer_clear(ringbuffer_t *buffer, uint32_t size)
 {
     buffer->S=size;
 
-	int q = 0;
-	for ( q = 0; q < size; q++)
+    uint32_t q = 0;
+    for ( q = 0; q < size; q++)
     {
-    	buffer->m_buffer[q] = 0;
+        buffer->m_buffer[q] = 0.0f;
     }
 
     buffer->m_size = 0;
     buffer->m_front = 0;
     buffer->m_back  = buffer->S - 1;
+    buffer->power = 0.0f;
 }
 
-void ringbuffer_push(ringbuffer_t *buffer) 
+void ringbuffer_push(ringbuffer_t *buffer)
 {
     buffer->m_back = (buffer->m_back + 1) % buffer->S;
 
@@ -50,13 +54,13 @@ void ringbuffer_push(ringbuffer_t *buffer)
     }
 }
     
-void ringbuffer_push_sample(ringbuffer_t *buffer, const float x) 
+void ringbuffer_push_sample(ringbuffer_t *buffer, const float x)
 {
     ringbuffer_push(buffer);
     buffer->m_buffer[buffer->m_back] = x;
 }
     
-void ringbuffer_pop(ringbuffer_t *buffer) 
+void ringbuffer_pop(ringbuffer_t *buffer)
 {
     if(buffer->m_size > 0 ) 
     {
@@ -65,7 +69,7 @@ void ringbuffer_pop(ringbuffer_t *buffer)
     }
 }
     
-void ringbuffer_back_erase(ringbuffer_t *buffer, const int n) 
+void ringbuffer_back_erase(ringbuffer_t *buffer, const uint32_t n)
 {
     if(n >= buffer->m_size)
     {
@@ -78,7 +82,7 @@ void ringbuffer_back_erase(ringbuffer_t *buffer, const int n)
     }
 }
     
-void ringbuffer_front_erase(ringbuffer_t *buffer, const int n) 
+void ringbuffer_front_erase(ringbuffer_t *buffer, const uint32_t n)
 {
     if(n >= buffer->m_size)
     {
@@ -93,10 +97,10 @@ void ringbuffer_front_erase(ringbuffer_t *buffer, const int n)
 
 int ringbuffer_peek_index(ringbuffer_t *buffer)
 {
-	int peek_index = 0;
+	uint32_t peek_index = 0;
 	float peek_value = 0;
 	
-	int i = 0;
+	uint32_t i = 0;
 	for (i = 0; i < buffer->S; i++)
 	{
 		if (peek_value < buffer->m_buffer[i])
@@ -111,18 +115,16 @@ int ringbuffer_peek_index(ringbuffer_t *buffer)
 
 float ringbuffer_push_and_calculate_power(ringbuffer_t *buffer, const float input)
 {
-    if (buffer->m_size++ < buffer->S)
+    float pow = sqrt(input * input) * (1.0f / buffer->S);
+
+    if (buffer->m_size < buffer->S)
     {
-        //store and recalculate
-        float pow = sqrtf(input * input) * (1.0f / buffer->S);
         //remove old sample and add new one to windowPower
         buffer->power += pow;
         ringbuffer_push_sample(buffer, pow);
     }
     else
     {
-        //pop, adjust and recalculate
-        float pow = sqrtf(input * input) * (1.0f / buffer->S);
         //remove old sample and add new one to windowPower
         buffer->power += pow - ringbuffer_front(buffer);
         ringbuffer_pop(buffer);
@@ -132,27 +134,27 @@ float ringbuffer_push_and_calculate_power(ringbuffer_t *buffer, const float inpu
     return buffer->power;
 }
 
-float ringbuffer_front(ringbuffer_t *buffer) 
+float ringbuffer_front(ringbuffer_t *buffer)
 { 
 	return buffer->m_buffer[buffer->m_front]; 
 }
 
-float ringbuffer_back(ringbuffer_t *buffer) 
+float ringbuffer_back(ringbuffer_t *buffer)
 { 
 	return buffer->m_buffer[buffer->m_back]; 
 }
 
-float ringbuffer_get_val(ringbuffer_t *buffer, int index) 
+float ringbuffer_get_val(ringbuffer_t *buffer, uint32_t index)
 { 
 	return buffer->m_buffer[index]; 
 }
 
-int ringbuffer_empty(ringbuffer_t *buffer) 
+int ringbuffer_empty(ringbuffer_t *buffer)
 { 
 	return buffer->m_size == 0; 
 }
 
-int ringbuffer_full(ringbuffer_t *buffer)  
+int ringbuffer_full(ringbuffer_t *buffer)
 { 
 	return buffer->m_size == buffer->S; 
 }

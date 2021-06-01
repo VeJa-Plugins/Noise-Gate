@@ -27,8 +27,6 @@
 
 #define PLUGIN_URI "http://VeJaPlugins.com/plugins/Release/NoiseGate"
 
-#define MAP(x, Imin, Imax, Omin, Omax)      ( x - Imin ) * (Omax -  Omin)  / (Imax - Imin) + Omin;
-
 typedef enum {
     PLUGIN_INPUT,
     PLUGIN_KEY,
@@ -51,10 +49,6 @@ typedef struct{
     float*           attack;
     float*             hold;
     float*            decay;
-
-    float prev_attack;
-    float prev_hold;
-    float prev_decay;
 
     uint32_t     sampleRate;
 
@@ -122,16 +116,13 @@ void run(LV2_Handle instance, uint32_t n_samples)
 {
     NoiseGate* self = (NoiseGate*)instance;    
 
-    if ( (self->prev_attack != *self->attack) || (self->prev_hold != *self->hold) || (self->prev_decay != *self->decay) )
-    {
-        //update parameters
-        //lower threshold is 20dB lower
-        Gate_UpdateParameters(&self->noisegate, self->sampleRate, *self->attack, *self->hold, *self->decay, 1, *self->threshold, *self->threshold - 20.0f);
+    //update parameters
+    //lower threshold is 20dB lower
+    Gate_UpdateParameters(&self->noisegate, (uint32_t)self->sampleRate,
+                         (uint32_t)*self->attack, (uint32_t)*self->hold,
+                         (uint32_t)*self->decay, 1, *self->threshold, *self->threshold - 20.0f);
 
-        self->prev_attack = *self->attack;
-        self->prev_decay = *self->decay;
-        self->prev_hold = *self->hold;
-    }
+
     for (uint32_t i = 0; i < n_samples; ++i)
     {
         self->output[i] = Gate_ApplyGate(&self->noisegate, self->input[i], self->key[i]);

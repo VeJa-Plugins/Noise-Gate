@@ -19,6 +19,7 @@
 */
 
 #include "gate_core.h"
+#include "circular_buffer.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -45,7 +46,7 @@ void Gate_Init(gate_t *gate)
     gate->_currentState = IDLE;
     gate->_tau = 0;
 
-    ringbuffer_clear(&gate->window, 128);
+    ringbuffer_clear(&gate->window, MAX_BUFFER_SIZE);
 }
 
 void Gate_UpdateParameters(gate_t *gate, const uint32_t sampleRate, const uint32_t attack, const uint32_t hold,
@@ -70,7 +71,7 @@ float Gate_ApplyGate(gate_t *gate, const float input, const float key)
     switch (gate->_currentState)
     {
         case IDLE:
-            gate->_rmsValue = sqrtf(gate->_keyValue * gate->_keyValue) * 0.707106781187;
+            gate->_rmsValue = sqrt(gate->_keyValue * gate->_keyValue) * 0.707106781187;
             if (gate->_rmsValue > gate->_upperThreshold)
             {
                 if (gate->_attackCounter > gate->_attackTime)
@@ -82,16 +83,11 @@ float Gate_ApplyGate(gate_t *gate, const float input, const float key)
                 }
                 else
                 {
+                    gate->_attackCounter++;
                     if (gate->_attackCounter != 0) 
-                    {
-                        gate->_attackCounter++;
                         return (input * powf((float)gate->_attackCounter, 2.0f) / powf((float)gate->_attackTime, 2.0f));
-                    }
                     else 
-                    {
-                        gate->_attackCounter++;
                         return 0.0f;
-                    }
                 }
             }
             else
@@ -99,7 +95,7 @@ float Gate_ApplyGate(gate_t *gate, const float input, const float key)
         break;
 
         case HOLD:
-            gate->_rmsValue = sqrtf(gate->_keyValue * gate->_keyValue) * 0.707106781187;
+            gate->_rmsValue = sqrt(gate->_keyValue * gate->_keyValue) * 0.707106781187;
             if (gate->_rmsValue > gate->_lowerThreshold)
                 gate->_holdCounter = 0;
             else if (gate->_holdCounter < gate->_holdTime)
