@@ -46,6 +46,8 @@ void Gate_Init(gate_t *gate)
     gate->_currentState = IDLE;
     gate->_tau = 0;
 
+    gate->_gainFactor = 0.0f;
+
     ringbuffer_clear(&gate->window, MAX_BUFFER_SIZE);
 }
 
@@ -63,7 +65,7 @@ void Gate_UpdateParameters(gate_t *gate, const uint32_t sampleRate, const uint32
     gate->_alpha = alpha;
 }
 
-float Gate_ApplyGate(gate_t *gate, const float input, const float key)
+float Gate_RunGate(gate_t *gate, const float input, const float key)
 {
     //get new keyValue
     gate->_keyValue = ringbuffer_push_and_calculate_power(&gate->window, key);
@@ -79,19 +81,19 @@ float Gate_ApplyGate(gate_t *gate, const float input, const float key)
                     gate->_currentState = HOLD;
                     gate->_holdCounter = 0;
                     gate->_attackCounter = 0;
-                    return input;
+                    gate->_gainFactor = 1.0f;
                 }
                 else
                 {
                     gate->_attackCounter++;
                     if (gate->_attackCounter != 0) 
-                        return (input * powf((float)gate->_attackCounter, 2.0f) / powf((float)gate->_attackTime, 2.0f));
+                        gate->_gainFactor = (powf((float)gate->_attackCounter, 2.0f) / powf((float)gate->_attackTime, 2.0f));
                     else 
-                        return 0.0f;
+                        gate->_gainFactor = 0.0f;
                 }
             }
             else
-                return 0.0f;
+                gate->_gainFactor = 0.0f;
         break;
 
         case HOLD:
@@ -106,14 +108,14 @@ float Gate_ApplyGate(gate_t *gate, const float input, const float key)
                 gate->_decayCounter = 0;
             }
 
-            return input;
+            gate->_gainFactor = 1.0f;
         break;
 
         case DECAY:
             if (gate->_decayCounter > gate->_decayTime)
             {
                 gate->_currentState = IDLE;
-                return 0.0f;
+                gate->_gainFactor = 0.0f;
             }
             else
             {
@@ -121,17 +123,21 @@ float Gate_ApplyGate(gate_t *gate, const float input, const float key)
                 if (gate->_decayCounter != 0) 
                 {
                     gate->_decayCounter++;
-                    return input * powf(dif, 2.0f) / powf((float)gate->_decayTime, 2.0f);
+                    gate->_gainFactor = powf(dif, 2.0f) / powf((float)gate->_decayTime, 2.0f);
                 }
                 else
                 {
                     gate->_decayCounter++;
-                    return input;
+                    gate->_gainFactor = 1.0f;
                 }
             }
         break;
     }  
 
-    //ERROR
-    return 0; 
+    return input * gate->_gainFactor;
+}
+
+float Gate_ApplyGate(gate_t *gate, const float input)
+{
+    return input * gate->_gainFactor; 
 }

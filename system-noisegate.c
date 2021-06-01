@@ -25,15 +25,15 @@
 
 /**********************************************************************************************************************************************************/
 
-#define PLUGIN_URI "http://VeJaPlugins.com/plugins/Release/NoiseGate"
+#define PLUGIN_URI "http://moddevices.com/plugins/mod-devel/System-NoiseGate"
 
 typedef enum {
-    PLUGIN_INPUT,
-    PLUGIN_KEY,
-    PLUGIN_OUTPUT,
+    PLUGIN_INPUT_1,
+    PLUGIN_INPUT_2,
+    PLUGIN_OUTPUT_1,
+    PLUGIN_OUTPUT_2,
+    PLUGIN_GATE_MODE,
     PLUGIN_THRESHOLD,
-    PLUGIN_ATTACK,
-    PLUGIN_HOLD,
     PLUGIN_DECAY
 }PortIndex;
 
@@ -42,13 +42,13 @@ typedef enum {
 typedef struct{
     
     //ports
-    float*            input;
-    float*              key;
-    float*           output;
-    float*        threshold;
-    float*           attack;
-    float*             hold;
-    float*            decay;
+    float*            input_1;
+    float*            input_2;
+    float*           output_1;
+    float*      	 output_2;
+    float*          gate_mode;
+    float*          threshold;
+    float*              decay;
 
     uint32_t     sampleRate;
 
@@ -82,23 +82,23 @@ static void connect_port(LV2_Handle instance, uint32_t port, void *data)
 
     switch (port)
     {
-        case PLUGIN_INPUT:
-            self->input = (float*) data;
+        case PLUGIN_INPUT_1:
+            self->input_1 = (float*) data;
             break;
-        case PLUGIN_KEY:
-            self->key = (float*) data;
+        case PLUGIN_INPUT_2:
+            self->input_2 = (float*) data;
             break;
-        case PLUGIN_OUTPUT:
-            self->output = (float*) data;
+        case PLUGIN_OUTPUT_1:
+            self->output_1 = (float*) data;
+            break;
+        case PLUGIN_OUTPUT_2:
+            self->output_2 = (float*) data;
+            break;
+        case PLUGIN_GATE_MODE:
+            self->gate_mode = (float*) data;
             break;
         case PLUGIN_THRESHOLD:
             self->threshold = (float*) data;
-            break;
-        case PLUGIN_ATTACK:
-            self->attack = (float*) data;
-            break;
-        case PLUGIN_HOLD:
-            self->hold = (float*) data;
             break;
         case PLUGIN_DECAY:
             self->decay = (float*) data;
@@ -118,14 +118,38 @@ void run(LV2_Handle instance, uint32_t n_samples)
 
     //update parameters
     //lower threshold is 20dB lower
-    Gate_UpdateParameters(&self->noisegate, (uint32_t)self->sampleRate,
-                         (uint32_t)*self->attack, (uint32_t)*self->hold,
+    Gate_UpdateParameters(&self->noisegate, (uint32_t)self->sampleRate, 10, 1,
                          (uint32_t)*self->decay, 1, *self->threshold, *self->threshold - 20.0f);
 
 
     for (uint32_t i = 0; i < n_samples; ++i)
     {
-        self->output[i] = Gate_ApplyGate(&self->noisegate, self->input[i], self->key[i]);
+    	switch((int)*self->gate_mode)
+    	{
+    		//off, copy 1 & 2
+    		case 0:
+    			self->output_1[i] = self->input_1[i];
+    			self->output_2[i] = self->input_2[i];
+    		break;
+
+    		//inp 1 only, copy 2
+    		case 1:
+    			self->output_1[i] = Gate_RunGate(&self->noisegate, self->input_1[i], self->input_1[i]);
+    			self->output_2[i] = self->input_2[i];
+    		break;
+
+    		//inp 2 only, copy 1
+    		case 2:
+    			self->output_2[i] = Gate_RunGate(&self->noisegate, self->input_2[i], self->input_2[i]);
+    			self->output_1[i] = self->input_1[i];
+    		break;
+    	
+    		//gate over 1, also apply to 2
+    		case 3:
+    			self->output_1[i] = Gate_RunGate(&self->noisegate, self->input_1[i], self->input_1[i]);
+    			self->output_2[i] = Gate_ApplyGate(&self->noisegate, self->input_2[i]);
+    		break;
+    	}
     }
 }
 

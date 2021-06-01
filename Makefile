@@ -1,10 +1,10 @@
 #!/usr/bin/make -f
-# Makefile for noisegate.lv2 #
+# Makefile for system-noisegate.lv2 #
 # --------------------------------- #
 
 include Makefile.mk
 
-NAME = noisegate
+NAME = system-noisegate
 
 # --------------------------------------------------------------
 # Installation path

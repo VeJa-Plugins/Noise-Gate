@@ -32,7 +32,7 @@ typedef enum {
 
 typedef struct GATE_T {
     float _alpha;
-    float _rmsValue, _keyValue, _upperThreshold, _lowerThreshold;
+    float _rmsValue, _keyValue, _upperThreshold, _lowerThreshold, _gainFactor;
     uint32_t _attackTime, _decayTime, _holdTime;
     uint32_t _attackCounter, _decayCounter, _holdCounter;
     uint32_t _currentState;
@@ -46,10 +46,15 @@ typedef struct GATE_T {
 /// <summary>This method called to initialize the Gate</summary>
 void Gate_Init(gate_t *gate);
 
-/// <summary>This method called to apply the Gate to the input sample</summary>
+/// <summary>This method called to run the Gate and apply it to the input sample</summary>
 /// <param name="input">Holds input sample</param> 
 /// <param name="output">Holds the address where the output should be written to</param> 
-float Gate_ApplyGate(gate_t *gate, const float input, const float key);
+float Gate_RunGate(gate_t *gate, const float input, const float key);
+
+/// <summary>This method called to only apply the Gate to the input sample</summary>
+/// <param name="input">Holds input sample</param> 
+/// <param name="output">Holds the address where the output should be written to</param> 
+float Gate_ApplyGate(gate_t *gate, const float input);
                 
 /// <summary>This method called to set the length of the window</summary>
 /// <param name="length">Holds the value that determines the window length</param>  
