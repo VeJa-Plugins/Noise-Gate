@@ -105,6 +105,6 @@ lv2:port
     lv2:shortname "Decay";
     lv2:default 10;
     lv2:minimum 1;
-    lv2:maximum 200;
+    lv2:maximum 1000;
     units:unit   units:ms
 ].
