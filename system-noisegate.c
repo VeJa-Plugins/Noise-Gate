@@ -124,6 +124,8 @@ void run(LV2_Handle instance, uint32_t n_samples)
 
     for (uint32_t i = 0; i < n_samples; ++i)
     {
+        Gate_PushSamples(&self->noisegate, self->input_1[i], self->input_2[i]);
+
     	switch((int)*self->gate_mode)
     	{
     		//off, copy 1 & 2
@@ -134,19 +136,20 @@ void run(LV2_Handle instance, uint32_t n_samples)
 
     		//inp 1 only, copy 2
     		case 1:
-    			self->output_1[i] = Gate_RunGate(&self->noisegate, self->input_1[i], self->input_1[i]);
+    			self->output_1[i] = Gate_RunGate(&self->noisegate, self->input_1[i]);
     			self->output_2[i] = self->input_2[i];
     		break;
 
     		//inp 2 only, copy 1
     		case 2:
-    			self->output_2[i] = Gate_RunGate(&self->noisegate, self->input_2[i], self->input_2[i]);
+    			self->output_2[i] = Gate_RunGate(&self->noisegate, self->input_2[i]);
     			self->output_1[i] = self->input_1[i];
     		break;
     	
-    		//gate over 1, also apply to 2
+    		//we only run the gate once, for the other just multiply
+            //stereo is handled when pushing the samples to get the highest key
     		case 3:
-    			self->output_1[i] = Gate_RunGate(&self->noisegate, self->input_1[i], self->input_1[i]);
+    			self->output_1[i] = Gate_RunGate(&self->noisegate, self->input_1[i]);
     			self->output_2[i] = Gate_ApplyGate(&self->noisegate, self->input_2[i]);
     		break;
     	}

@@ -82,7 +82,7 @@ lv2:port
         rdfs:label "In 2" ;
         rdf:value 2 
     ] , [
-        rdfs:label "In 1+2" ;
+        rdfs:label "Stereo" ;
         rdf:value 3 
     ]
 ],

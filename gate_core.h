@@ -40,7 +40,8 @@ typedef struct GATE_T {
     
     gate_state_t state;
 
-    ringbuffer_t window;
+    ringbuffer_t window1;
+    ringbuffer_t window2;
 } gate_t;
 
 /// <summary>This method called to initialize the Gate</summary>
@@ -48,13 +49,15 @@ void Gate_Init(gate_t *gate);
 
 /// <summary>This method called to run the Gate and apply it to the input sample</summary>
 /// <param name="input">Holds input sample</param> 
-/// <param name="output">Holds the address where the output should be written to</param> 
-float Gate_RunGate(gate_t *gate, const float input, const float key);
+float Gate_RunGate(gate_t *gate, const float input);
 
 /// <summary>This method called to only apply the Gate to the input sample</summary>
 /// <param name="input">Holds input sample</param> 
-/// <param name="output">Holds the address where the output should be written to</param> 
 float Gate_ApplyGate(gate_t *gate, const float input);
+
+/// <summary>This method called to push the stereo samples to the ringbuffer</summary>
+/// <param name="input">Holds input sample</param> 
+void Gate_PushSamples(gate_t *gate, const float input1, const float input2);
                 
 /// <summary>This method called to set the length of the window</summary>
 /// <param name="length">Holds the value that determines the window length</param>  

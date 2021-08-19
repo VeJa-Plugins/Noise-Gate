@@ -48,7 +48,8 @@ void Gate_Init(gate_t *gate)
 
     gate->_gainFactor = 0.0f;
 
-    ringbuffer_clear(&gate->window, MAX_BUFFER_SIZE);
+    ringbuffer_clear(&gate->window1, MAX_BUFFER_SIZE);
+    ringbuffer_clear(&gate->window2, MAX_BUFFER_SIZE);
 }
 
 void Gate_UpdateParameters(gate_t *gate, const uint32_t sampleRate, const uint32_t attack, const uint32_t hold,
@@ -65,11 +66,8 @@ void Gate_UpdateParameters(gate_t *gate, const uint32_t sampleRate, const uint32
     gate->_alpha = alpha;
 }
 
-float Gate_RunGate(gate_t *gate, const float input, const float key)
+float Gate_RunGate(gate_t *gate, const float input)
 {
-    //get new keyValue
-    gate->_keyValue = ringbuffer_push_and_calculate_power(&gate->window, key);
-
     switch (gate->_currentState)
     {
         case IDLE:
@@ -157,4 +155,13 @@ float Gate_RunGate(gate_t *gate, const float input, const float key)
 float Gate_ApplyGate(gate_t *gate, const float input)
 {
     return input * gate->_gainFactor; 
+}
+
+void Gate_PushSamples(gate_t *gate, const float input1, const float input2)
+{
+    float key1 = ringbuffer_push_and_calculate_power(&gate->window1, input1);
+    float key2 = ringbuffer_push_and_calculate_power(&gate->window2, input2);
+
+    //get new keyValue
+    gate->_keyValue = (key1>key2) ? key1 : key2;
 }
